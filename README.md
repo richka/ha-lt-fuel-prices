@@ -124,6 +124,13 @@ sensoriaus informacijoje. Integracijos autorius – richka.
 LEA pavadinimas naudojamas tik duomenų šaltiniui nurodyti. LEA logotipas
 integracijoje nenaudojamas.
 
+## Kūrėjai
+
+| | |
+| --- | --- |
+| **richka** | Integracijos autorius ir prižiūrėtojas |
+| [<img src="docs/opencode-logo.png" alt="OpenCode" width="32" height="32">](https://opencode.ai) | **OpenCode** – AI programavimo asistentas, padėjęs kuriant integraciją |
+
 ## Licencija
 
 [MIT](LICENSE). Tai nepriklausoma trečiosios šalies sukurta integracija. LEA šios
