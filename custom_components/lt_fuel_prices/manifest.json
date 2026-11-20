@@ -1,0 +1,20 @@
+{
+  "domain": "lt_fuel_prices",
+  "name": "Degalų kainos Lietuvoje",
+  "after_dependencies": [
+    "frontend",
+    "http"
+  ],
+  "categories": [
+    "local_services"
+  ],
+  "codeowners": [
+    "@richka"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/richka/ha-lt-fuel-prices#readme",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/richka/ha-lt-fuel-prices/issues",
+  "version": "1.0.0"
+}

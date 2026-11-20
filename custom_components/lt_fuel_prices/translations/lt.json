@@ -1,0 +1,128 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Degalų kainos Lietuvoje",
+        "description": "Integracija naudoja tą patį duomenų šaltinį kaip oficialus Lietuvos energetikos agentūros (LEA) degalų kainų žemėlapis. Prieigos raktą galima gauti automatiškai iš LEA svetainės. Duomenų šaltinis – Lietuvos energetikos agentūra (LEA), {source_url}. Pirminiai degalų kainų duomenų teikėjai – degalines valdančios įmonės. Tai nepriklausoma trečiosios šalies sukurta integracija. Už jos veikimą, duomenų nuskaitymą, atnaujinimą ir atvaizdavimą integracijoje atsako jos kūrėjas. LEA šios integracijos nekuria ir neadministruoja.",
+        "data": {
+          "token_auto": "Gauti prieigos raktą automatiškai"
+        }
+      },
+      "token": {
+        "title": "Prieigos raktas",
+        "description": "Įklijuokite prieigos raktą. Jį galima rasti LEA svetainėje, tačiau dažniausiai jo ieškoti nereikia – integracija jį gauna automatiškai.",
+        "data": {
+          "token": "Prieigos raktas"
+        }
+      },
+      "municipality": {
+        "title": "Savivaldybė",
+        "data": {
+          "municipality": "Savivaldybė"
+        }
+      },
+      "city": {
+        "title": "Miesto filtras",
+        "description": "Savivaldybėje rasta degalinių: {stations}. Pagal filtrą „{prefix}“ bus naudojama: {matching}. Jei norite visos savivaldybės, palikite lauką tuščią.",
+        "data": {
+          "city_prefix": "Miesto filtras (adreso pradžia, nebūtina)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Atnaujinti prieigos raktą",
+        "description": "LEA nepriėmė išsaugoto prieigos rakto. Įklijuokite naują.",
+        "data": {
+          "token": "Prieigos raktas"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nepavyko prisijungti prie LEA duomenų šaltinio.",
+      "invalid_auth": "Neteisingas arba pasibaigęs prieigos raktas.",
+      "token_not_found": "Nepavyko automatiškai rasti prieigos rakto. Įveskite jį rankiniu būdu.",
+      "unknown": "Įvyko nežinoma klaida.",
+      "no_stations": "Pagal šį filtrą nerasta nė vienos degalinės."
+    },
+    "abort": {
+      "already_configured": "Ši savivaldybė jau pridėta.",
+      "reauth_successful": "Prieigos raktas atnaujintas.",
+      "reauth_failed": "Nepavyko atnaujinti prieigos rakto.",
+      "no_data": "Pasirinktoje savivaldybėje LEA šiuo metu neskelbia degalų kainų."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Degalų kainos Lietuvoje",
+        "description": "Degalinių pagal miesto filtrą: {stations}. Atskirus sensorius turi: {selected}.",
+        "data": {
+          "city_prefix": "Miesto filtras (adreso pradžia)",
+          "stations_mode": "Degalinių sensoriai"
+        }
+      },
+      "stations": {
+        "title": "Stebimos degalinės",
+        "description": "Pažymėkite degalines, kurioms reikia atskirų sensorių. Sąraše degalinių: {count}. Kiekviena pažymėta degalinė sukuria vieną sensorių.",
+        "data": {
+          "stations": "Stebimos degalinės"
+        }
+      },
+      "confirm_all": {
+        "title": "Patvirtinkite visų degalinių stebėjimą",
+        "description": "Dėmesio: bus sukurti {count} sensoriai – po vieną kiekvienai degalinei. Tai padidins entity registro dydį ir recorder apkrovą.",
+        "data": {
+          "confirm": "Taip, suprantu, kad bus sukurta tiek sensorių"
+        }
+      }
+    },
+    "error": {
+      "no_stations": "Pagal šį filtrą nerasta nė vienos degalinės.",
+      "confirm_required": "Pažymėkite patvirtinimo varnelę."
+    }
+  },
+  "selector": {
+    "stations_mode": {
+      "options": {
+        "none": "Nekurti degalinių sensorių",
+        "selected": "Tik pasirinktoms degalinėms",
+        "all": "Visoms degalinėms"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "average_95": {
+        "name": "Vidutinė 95-o benzino kaina"
+      },
+      "average_diesel": {
+        "name": "Vidutinė dyzelino kaina"
+      },
+      "cheapest_95": {
+        "name": "Pigiausias 95-as"
+      },
+      "cheapest_diesel": {
+        "name": "Pigiausias dyzelinas"
+      },
+      "cheapest_95_station": {
+        "name": "Pigiausia 95-o degalinė"
+      },
+      "cheapest_diesel_station": {
+        "name": "Pigiausia dyzelino degalinė"
+      },
+      "stations": {
+        "name": "Degalinių skaičius"
+      },
+      "updated_at": {
+        "name": "Paskutinį kartą atnaujinta"
+      },
+      "source": {
+        "name": "Duomenų šaltinis"
+      }
+    },
+    "binary_sensor": {
+      "stale": {
+        "name": "Duomenų senumas"
+      }
+    }
+  }
+}

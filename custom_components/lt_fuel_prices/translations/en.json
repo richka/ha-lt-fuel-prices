@@ -1,0 +1,128 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fuel prices in Lithuania",
+        "description": "This integration uses the same data source as the official fuel price map of the Lithuanian Energy Agency (LEA). The access token can be discovered automatically from the LEA website. Data source – the Lithuanian Energy Agency (LEA), {source_url}. Primary fuel price data providers – the companies operating the stations. This is an independent third-party integration. Its author is responsible for its operation, data retrieval, updating and display. LEA does not create or administer this integration.",
+        "data": {
+          "token_auto": "Discover the access token automatically"
+        }
+      },
+      "token": {
+        "title": "Access token",
+        "description": "Paste the access token. It can be found on the LEA website, but usually you do not need to look for it – the integration discovers it automatically.",
+        "data": {
+          "token": "Access token"
+        }
+      },
+      "municipality": {
+        "title": "Municipality",
+        "data": {
+          "municipality": "Municipality"
+        }
+      },
+      "city": {
+        "title": "City filter",
+        "description": "The municipality has {stations} stations. The filter \"{prefix}\" keeps {matching}. Leave the field empty to use the whole municipality.",
+        "data": {
+          "city_prefix": "City filter (address prefix, optional)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Update the access token",
+        "description": "LEA rejected the stored access token. Paste a new one.",
+        "data": {
+          "token": "Access token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the LEA data source.",
+      "invalid_auth": "The access token is invalid or has expired.",
+      "token_not_found": "The access token could not be discovered automatically. Enter it manually.",
+      "unknown": "An unknown error occurred.",
+      "no_stations": "No stations match this filter."
+    },
+    "abort": {
+      "already_configured": "This municipality has already been added.",
+      "reauth_successful": "Access token updated.",
+      "reauth_failed": "Could not update the access token.",
+      "no_data": "LEA currently publishes no fuel prices for the selected municipality."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Fuel prices in Lithuania",
+        "description": "Stations matching the city filter: {stations}. With dedicated sensors: {selected}.",
+        "data": {
+          "city_prefix": "City filter (address prefix)",
+          "stations_mode": "Station sensors"
+        }
+      },
+      "stations": {
+        "title": "Monitored stations",
+        "description": "Select the stations that should get a dedicated sensor. Stations in the list: {count}. Each selected station creates one sensor.",
+        "data": {
+          "stations": "Monitored stations"
+        }
+      },
+      "confirm_all": {
+        "title": "Confirm monitoring every station",
+        "description": "Warning: {count} sensors will be created, one per station. This increases the entity registry size and recorder load.",
+        "data": {
+          "confirm": "Yes, I understand how many sensors this creates"
+        }
+      }
+    },
+    "error": {
+      "no_stations": "No stations match this filter.",
+      "confirm_required": "Tick the confirmation checkbox."
+    }
+  },
+  "selector": {
+    "stations_mode": {
+      "options": {
+        "none": "No station sensors",
+        "selected": "Selected stations only",
+        "all": "All stations"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "average_95": {
+        "name": "Average 95 petrol price"
+      },
+      "average_diesel": {
+        "name": "Average diesel price"
+      },
+      "cheapest_95": {
+        "name": "Cheapest 95"
+      },
+      "cheapest_diesel": {
+        "name": "Cheapest diesel"
+      },
+      "cheapest_95_station": {
+        "name": "Cheapest 95 station"
+      },
+      "cheapest_diesel_station": {
+        "name": "Cheapest diesel station"
+      },
+      "stations": {
+        "name": "Station count"
+      },
+      "updated_at": {
+        "name": "Last updated"
+      },
+      "source": {
+        "name": "Data source"
+      }
+    },
+    "binary_sensor": {
+      "stale": {
+        "name": "Data staleness"
+      }
+    }
+  }
+}
