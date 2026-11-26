@@ -95,16 +95,16 @@ def _pump_icon(size: int) -> Image.Image:
 
 def _logo(icon: Image.Image, text_color: tuple[int, int, int, int]) -> Image.Image:
     """Draw the horizontal logo: icon on the left, product name on the right."""
-    width, height = 1000, 160
+    width, height = 1600, 256
     canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
-    icon_size = 140
+    icon_size = 224
     small = icon.resize((icon_size, icon_size), Image.LANCZOS)
-    canvas.alpha_composite(small, (10, (height - icon_size) // 2))
+    canvas.alpha_composite(small, (16, (height - icon_size) // 2))
 
     draw = ImageDraw.Draw(canvas)
-    text_x = 170
-    font_size = 74
+    text_x = 272
+    font_size = 118
     while font_size > 40:
         font = _font(font_size)
         if draw.textlength(NAME, font=font) <= width - text_x - 8:
@@ -131,11 +131,11 @@ def main() -> None:
 
     light = _logo(icon, LIGHT_TEXT)
     light.save(BRAND / "logo@2x.png")
-    light.resize((500, 80), Image.LANCZOS).save(BRAND / "logo.png")
+    light.resize((800, 128), Image.LANCZOS).save(BRAND / "logo.png")
 
     dark = _logo(icon, DARK_TEXT)
     dark.save(BRAND / "dark_logo@2x.png")
-    dark.resize((500, 80), Image.LANCZOS).save(BRAND / "dark_logo.png")
+    dark.resize((800, 128), Image.LANCZOS).save(BRAND / "dark_logo.png")
 
     for path in sorted(BRAND.iterdir()):
         with Image.open(path) as image:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import struct
 from pathlib import Path
 
 from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
@@ -37,6 +38,30 @@ def test_frontend_files_are_bundled():
         "viada",
     ):
         assert (FRONTEND_DIR / "logos" / f"{name}.png").is_file()
+
+
+def _png_size(path: Path) -> tuple[int, int]:
+    """Return the width and height from a PNG header."""
+    data = path.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
+    return struct.unpack(">II", data[16:24])
+
+
+def test_brand_images_meet_hassfest_sizes():
+    """Brand logos must satisfy the Marketplace hassfest size checks."""
+    brand = FRONTEND_DIR.parent / "brand"
+
+    for name, minimum, maximum in (
+        ("logo.png", 128, 256),
+        ("dark_logo.png", 128, 256),
+        ("logo@2x.png", 256, 512),
+        ("dark_logo@2x.png", 256, 512),
+    ):
+        width, height = _png_size(brand / name)
+        assert minimum <= min(width, height) <= maximum
+
+    assert _png_size(brand / "icon.png") == (256, 256)
+    assert _png_size(brand / "icon@2x.png") == (512, 512)
 
 
 def test_card_is_configurable_and_escapes_markup():
