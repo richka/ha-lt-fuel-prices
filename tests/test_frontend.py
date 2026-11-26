@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from homeassistant.components.frontend import DATA_EXTRA_MODULE_URL
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
@@ -35,6 +37,35 @@ def test_frontend_files_are_bundled():
         "viada",
     ):
         assert (FRONTEND_DIR / "logos" / f"{name}.png").is_file()
+
+
+def test_card_is_configurable_and_escapes_markup():
+    """The card is not tied to one entity and escapes interpolated data."""
+    body = (FRONTEND_DIR / "fuel-prices-card.js").read_text(encoding="utf-8")
+
+    assert "DEFAULT_ENTITY" not in body
+    assert "sensor.marijampole_degalines" not in body
+    assert "Neste - Marijampolė" not in body
+    assert "ha-entity-picker" in body
+    assert "static getStubConfig(hass" in body
+    assert "const esc =" in body
+
+
+def test_readme_documents_card_keys():
+    """The card options are documented for YAML users."""
+    readme = (Path(__file__).parents[1] / "README.md").read_text(encoding="utf-8")
+
+    for key in (
+        "data_entity",
+        "mode",
+        "fuel",
+        "station",
+        "show_logo",
+        "show_petrol",
+        "show_diesel",
+        "show_lpg",
+    ):
+        assert key in readme
 
 
 async def test_register_frontend_is_idempotent(hass: HomeAssistant) -> None:

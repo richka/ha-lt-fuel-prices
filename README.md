@@ -88,7 +88,44 @@ Integracija turi dviejų režimų kortelę:
 - **Degalinė** – pasirinktos degalinės logotipas, adresas ir kuro kainos.
 
 Kortelė įtraukiama per prietaisų skydo kortelių parinkiklį („Degalų kainos
-Lietoje“).
+Lietoje“). Redaktoriuje galima pasirinkti subjektą – bet kurį sensorį, turintį
+`stations` atributą (paprastai `sensor.<miestas>_degalines`) – ir, degalinės
+režime, konkrečią degalinę.
+
+### Kortelės konfigūracija
+
+| Raktas | Privalomas | Reikšmė |
+| --- | --- | --- |
+| `data_entity` | taip | Sensorius su `stations` atributu, paprastai `sensor.<miestas>_degalines`. |
+| `mode` | taip | `summary` (suvestinė) arba `station` (degalinė). |
+| `fuel` | summary | Kuro rūšis: `95`, `98`, `Dyzelinas` arba `Dujos`. |
+| `station` | station | Degalinė formatu `Prekės ženklas - adresas`. |
+| `show_logo` | ne | Rodyti degalinės logotipą (numatyta `true`). |
+| `show_petrol` | ne | Rodyti benziną (numatyta `true`). |
+| `show_diesel` | ne | Rodyti dyzeliną (numatyta `true`). |
+| `show_lpg` | ne | Rodyti SND (numatyta `true`). |
+
+Suvestinės kortelė:
+
+```yaml
+type: custom:fuel-prices-card
+data_entity: sensor.marijampole_degalines
+mode: summary
+fuel: "95"
+```
+
+De galinės kortelė:
+
+```yaml
+type: custom:fuel-prices-card
+data_entity: sensor.marijampole_degalines
+mode: station
+station: "Neste - Marijampolė, Vilkaviškio g. 61D, 68153"
+show_logo: true
+show_petrol: true
+show_diesel: true
+show_lpg: false
+```
 
 Kortelės apačioje visada matoma šaltinio nuoroda ir žyma „Neoficiali trečiosios
 šalies integracija“. Pilnas atribucijos tekstas pateikiamas užvedus pelę.

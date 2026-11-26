@@ -2,7 +2,7 @@
  * fuel-prices-card v3 – kuro kainų kortelės (kk2.png / kk3.png stilius).
  *
  * Duomenų šaltinis: VIENAS sensorius su visų degalinių JSON atribute
- * (sensor.marijampole_degalines → stations, fuel_names).
+ * (sensor.<miestas>_degalines → stations, fuel_names).
  *
  * Režimai:
  *   summary – kuro rūšies suvestinė: spalvotas ženklelis su trumpiniu,
@@ -13,7 +13,7 @@
  * Redaktorius:
  *   - įkeliant naują kortelę pirmiausia siūlomas REŽIMO pasirinkimas (plytelės),
  *     po pasirinkimo rodomi tik to režimo laukai (režimo keisti negalima);
- *   - subjektas rodomas kaip tile kortelėje, bet nekeičiamas (read-only);
+ *   - subjektą galima pasirinkti entity picker'iu;
  *   - degalinės režime: „Rodyti logotipą" perjungiklis ir žetonų matomumo
  *     perjungikliai (benzinas / dyzelinas / dujos).
  */
@@ -104,7 +104,27 @@ const fuelMeta = label => FUEL_META[label] || { short: (label || "?").slice(0, 3
 
 const FUEL_DISPLAY = { "95": "95 benzinas", "98": "98 benzinas", "Dyzelinas": "Dyzelinas", "Dujos": "LPG dujos" };
 
-const DEFAULT_ENTITY = "sensor.marijampole_degalines";
+// Apsauga nuo HTML injekcijų: visos iš duomenų/konfigūracijos gaunamos
+// reikšmės prieš įterpiant į innerHTML turi būti escapinamos.
+const esc = value =>
+  String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+
+const hasStations = value => {
+  if (Array.isArray(value)) return true;
+  if (typeof value === "string") {
+    try { return Array.isArray(JSON.parse(value)); } catch { return false; }
+  }
+  return false;
+};
+
+const firstStationsEntity = hass => {
+  if (!hass?.states) return "";
+  return Object.entries(hass.states).find(([, state]) =>
+    hasStations(state?.attributes?.stations)
+  )?.[0] || "";
+};
 
 // Kortelės failai patiekti integracijos statiniu keliu.
 const ASSET_BASE = "/lt_fuel_prices";
@@ -124,7 +144,7 @@ const attribution = (oneLine = false) => {
     `<a href="https://degalukainos.ena.lt/" target="_blank" rel="noopener noreferrer">degalukainos.ena.lt</a>`;
   if (oneLine) {
     return (
-      `<div class="fp-attrib fp-attrib-one" title="${ATTRIBUTION_TITLE}">` +
+      `<div class="fp-attrib fp-attrib-one" title="${esc(ATTRIBUTION_TITLE)}">` +
       source +
       `<span>·</span>` +
       `<span class="fp-attrib-status-inline">Neoficiali trečiosios šalies integracija</span>` +
@@ -132,7 +152,7 @@ const attribution = (oneLine = false) => {
     );
   }
   return (
-    `<div class="fp-attrib" title="${ATTRIBUTION_TITLE}">` +
+    `<div class="fp-attrib" title="${esc(ATTRIBUTION_TITLE)}">` +
     `<div class="fp-attrib-src">${source}</div>` +
     `<div class="fp-attrib-status">Neoficiali trečiosios šalies integracija</div>` +
     `</div>`
@@ -167,14 +187,11 @@ const parsePrice = v => {
 
 class FuelPricesCard extends HTMLElement {
   setConfig(config) {
-    if (!config || !config.data_entity) {
-      throw new Error("fuel-prices-card: nurodykite data_entity");
+    if (!config || typeof config !== "object") {
+      throw new Error("fuel-prices-card: nurodykite kortelės konfigūraciją");
     }
     if (config.mode && !["summary", "station"].includes(config.mode)) {
       throw new Error("fuel-prices-card: režimas turi būti summary arba station");
-    }
-    if (config.mode === "station" && !config.station) {
-      throw new Error("fuel-prices-card: station režimui reikia station (Prekės ženklas - adresas)");
     }
     this._config = config;
     // Svarbu: persipiešiame ir pakeitus konfigūraciją (HA peržiūroje hass
@@ -226,9 +243,11 @@ class FuelPricesCard extends HTMLElement {
   _logoSrc(s) {
     if (s && s.logo && s.logo.url) {
       const url = String(s.logo.url);
-      return /^(https?:)?\//.test(url)
-        ? url
-        : `${ASSET_BASE}/logos/${url.split("/").pop().split("?")[0]}`;
+      if (/^https?:\/\//i.test(url) || url.startsWith("/")) {
+        return url;
+      }
+      const file = url.split("/").pop().split("?")[0].replace(/[^A-Za-z0-9._-]/g, "");
+      if (file) return `${ASSET_BASE}/logos/${file}`;
     }
     if (!s || !s.brand) return null;
     const brand = String(s.brand).toLowerCase();
@@ -246,7 +265,9 @@ class FuelPricesCard extends HTMLElement {
     const fuelNames = this._fuelNames();
     let body = "";
 
-    if (!c.mode) {
+    if (!c.data_entity) {
+      body = `<div class="fp-empty">Pasirinkite subjektą kortelės nustatymuose.</div>`;
+    } else if (!c.mode) {
       body = `<div class="fp-empty">Atidarykite kortelės nustatymus ir pasirinkite režimą.</div>`;
     } else if (c.mode === "summary") {
       const fuel = c.fuel || "95";
@@ -269,17 +290,20 @@ class FuelPricesCard extends HTMLElement {
 
       body = `
         <div class="fp-head">
-          <div class="fp-badge" style="background: ${meta.bg}; color: #fff;">${meta.short}</div>
-          <div class="fp-title">${name}</div>
+          <div class="fp-badge" style="background: ${esc(meta.bg)}; color: #fff;">${esc(meta.short)}</div>
+          <div class="fp-title">${esc(name)}</div>
         </div>
-        <div class="fp-price">${fmtP(cheapest ? cheapest.price : null)}</div>
+        <div class="fp-price">${esc(fmtP(cheapest ? cheapest.price : null))}</div>
         <div class="fp-divider"></div>
         ${noData
           ? `<div class="fp-row"><ha-icon icon="mdi:database-alert"></ha-icon><span>LEA šiuo metu neskelbia kainų</span></div>`
-          : `<div class="fp-row"><span>Pigiausia – <b>${cheapest.brand}</b></span></div>
-             <div class="fp-row fp-row-average"><span>Vidutiniškai <b>${fmtP(avg)}</b></span></div>`}`;
-    } else {
+          : `<div class="fp-row"><span>Pigiausia – <b>${esc(cheapest.brand)}</b></span></div>
+             <div class="fp-row fp-row-average"><span>Vidutiniškai <b>${esc(fmtP(avg))}</b></span></div>`}`;
+    } else if (c.mode === "station") {
       const key = c.station || "";
+      if (!key) {
+        body = `<div class="fp-empty">Pasirinkite degalinę kortelės nustatymuose.</div>`;
+      } else {
       const s = stations.find(x => `${x.brand} - ${x.address}` === key);
       const showLogo = c.show_logo !== false;
 
@@ -287,7 +311,7 @@ class FuelPricesCard extends HTMLElement {
       if (showLogo) {
         const src = this._logoSrc(s);
         logoHtml = src
-          ? `<div class="fp-logo-frame"><img class="fp-logo" src="${src}" alt=""></div>`
+          ? `<div class="fp-logo-frame"><img class="fp-logo" src="${esc(src)}" alt=""></div>`
           : `<div class="fp-logo-frame"><ha-icon icon="mdi:local-gas-station" style="color: var(--secondary-text-color);"></ha-icon></div>`;
       }
 
@@ -306,7 +330,7 @@ class FuelPricesCard extends HTMLElement {
             .filter(p => p.value && p.value !== "—" && p.value !== "unknown" && visible(fuelGroup(p.label)))
             .map(p => {
               const lbl = fuelNames[p.label] || FUEL_DISPLAY[p.label] || p.label;
-              return `<div class="fp-chip"><div class="fp-label">${lbl}</div><div class="fp-price">${p.value}</div></div>`;
+              return `<div class="fp-chip"><div class="fp-label">${esc(lbl)}</div><div class="fp-price">${esc(p.value)}</div></div>`;
             })
             .join("")
         : "";
@@ -320,11 +344,12 @@ class FuelPricesCard extends HTMLElement {
         <div class="fp-header">
           ${logoHtml}
           <div>
-            <div class="fp-name">${name}</div>
-            ${s ? `<div class="fp-addr"><ha-icon icon="mdi:map-marker"></ha-icon><span>${s.address}</span></div>` : ""}
+            <div class="fp-name">${esc(name)}</div>
+            ${s ? `<div class="fp-addr"><ha-icon icon="mdi:map-marker"></ha-icon><span>${esc(s.address)}</span></div>` : ""}
           </div>
         </div>
         ${chipsHtml}`;
+      }
     }
 
     this.innerHTML = `${STYLE}<ha-card><div class="fp-body">${body}${attribution(c.mode === "station")}</div></ha-card>`;
@@ -345,8 +370,15 @@ class FuelPricesCard extends HTMLElement {
       : { columns: "full", rows: 2, min_rows: 2, max_rows: 8 };
   }
 
-  static getStubConfig() {
-    return { type: "custom:fuel-prices-card", data_entity: DEFAULT_ENTITY };
+  static getStubConfig(hass, entities, entitiesFallback) {
+    const candidates = [...(entities || []), ...(entitiesFallback || [])];
+    const fromCandidates = candidates.find(id =>
+      hasStations(hass?.states?.[id]?.attributes?.stations)
+    );
+    return {
+      type: "custom:fuel-prices-card",
+      data_entity: fromCandidates || firstStationsEntity(hass)
+    };
   }
 
   static getConfigElement() {
@@ -365,13 +397,6 @@ const EDITOR_STYLE = `
       font-size: 12px; letter-spacing: .4px;
       color: var(--secondary-text-color); margin-bottom: 4px;
     }
-    .ed-entity {
-      display: flex; flex-direction: column; gap: 2px;
-      padding: 10px 12px;
-      border: 1px solid var(--divider-color, rgba(128,128,128,.3));
-      border-radius: var(--ha-card-border-radius, 12px);
-    }
-    .ed-entity-name { font-size: 14px; color: var(--primary-text-color); }
     .ed-switch-row {
       display: flex; align-items: center; justify-content: space-between;
       gap: 12px; font-size: 14px; color: var(--primary-text-color);
@@ -410,6 +435,8 @@ class FuelPricesCardEditor extends HTMLElement {
     if (sig !== this._lastDataSig) {
       this._lastDataSig = sig;
       if (this.isConnected) this._render();
+    } else if (this.isConnected) {
+      this._wireEntityPicker();
     }
   }
 
@@ -444,10 +471,8 @@ class FuelPricesCardEditor extends HTMLElement {
     return this._jsonAttr(attrs?.fuel_names, {});
   }
 
-  _entityLabel() {
-    const c = this._config || {};
-    const st = this._hass?.states?.[c.data_entity || DEFAULT_ENTITY];
-    return (st && (st.attributes.friendly_name || st.entity_id)) || (c.data_entity || DEFAULT_ENTITY);
+  _firstEntity() {
+    return firstStationsEntity(this._hass);
   }
 
   _render() {
@@ -475,9 +500,9 @@ class FuelPricesCardEditor extends HTMLElement {
         // rodo „Konfigūracijos klaida: Nepateiktas joks tipas".
         const base = { ...(this._config || {}) };
         const next = mode === "summary"
-          ? { ...base, mode: "summary", data_entity: base.data_entity || DEFAULT_ENTITY, fuel: base.fuel || "95" }
+          ? { ...base, mode: "summary", data_entity: base.data_entity || this._firstEntity(), fuel: base.fuel || "95" }
           : {
-              ...base, mode: "station", data_entity: base.data_entity || DEFAULT_ENTITY,
+              ...base, mode: "station", data_entity: base.data_entity || this._firstEntity(),
               station: base.station || this._defaultStation(),
               show_logo: base.show_logo !== false,
               show_petrol: base.show_petrol !== false,
@@ -506,7 +531,7 @@ class FuelPricesCardEditor extends HTMLElement {
     const entityRow = `
       <div>
         <div class="ed-label">Subjektas</div>
-        <div class="ed-entity"><span class="ed-entity-name">${this._entityLabel()}</span></div>
+        <ha-entity-picker id="ed-entity"></ha-entity-picker>
       </div>`;
 
     if (isSummary) {
@@ -575,8 +600,7 @@ class FuelPricesCardEditor extends HTMLElement {
 
   _defaultStation() {
     const st = this._stations();
-    if (st.length) return `${st[0].brand} - ${st[0].address}`;
-    return "Neste - Marijampolė, Vilkaviškio g. 61D, 68153";
+    return st.length ? `${st[0].brand} - ${st[0].address}` : "";
   }
 
   // Perjungikliai išjungiami, kai pasirinktoje degalinėje tokios kuro grupės kainos nėra
@@ -598,6 +622,21 @@ class FuelPricesCardEditor extends HTMLElement {
     set("#ed-petrol", "petrol");
     set("#ed-diesel", "diesel");
     set("#ed-lpg", "lpg");
+  }
+
+  _wireEntityPicker() {
+    const picker = this.querySelector("#ed-entity");
+    if (!picker) return;
+    picker.hass = this._hass;
+    picker.value = this._config?.data_entity || "";
+    picker.includeDomains = ["sensor"];
+    if (picker._fpEntityPickerWired) return;
+    picker._fpEntityPickerWired = true;
+    picker.addEventListener("value-changed", ev => {
+      const value = ev.detail?.value;
+      if (!value || value === this._config?.data_entity) return;
+      this._emit({ ...(this._config || {}), data_entity: value, station: "" });
+    });
   }
 
   _wire() {
@@ -638,6 +677,7 @@ class FuelPricesCardEditor extends HTMLElement {
     wireSwitch("#ed-petrol", "show_petrol");
     wireSwitch("#ed-diesel", "show_diesel");
     wireSwitch("#ed-lpg", "show_lpg");
+    this._wireEntityPicker();
   }
 }
 
