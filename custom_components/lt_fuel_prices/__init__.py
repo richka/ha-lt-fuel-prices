@@ -65,5 +65,9 @@ def _has_loaded_entries(hass: HomeAssistant, entry: EnaConfigEntry) -> bool:
 async def _async_update_listener(
     hass: HomeAssistant, entry: EnaConfigEntry
 ) -> None:
-    """Reload the entry after its options were changed."""
+    """Reload the entry only when its options were changed."""
+    coordinator = entry.runtime_data
+    if coordinator is not None and dict(entry.options) == coordinator.options_snapshot:
+        # A token refresh updates entry.data; it must not rebuild the entry.
+        return
     await hass.config_entries.async_reload(entry.entry_id)

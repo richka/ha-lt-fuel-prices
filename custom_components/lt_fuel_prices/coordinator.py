@@ -64,6 +64,9 @@ class EnaFuelPricesCoordinator(DataUpdateCoordinator[Snapshot]):
         )
         self._cache = PriceCache()
         self._cache_loaded = False
+        # Snapshot used by the config-entry update listener: a token refresh
+        # changes data, not options, and must not reload the entry.
+        self.options_snapshot = dict(entry.options)
 
     async def _async_update_data(self) -> Snapshot:
         """Fetch the latest prices from the LEA API."""
