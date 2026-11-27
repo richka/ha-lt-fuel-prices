@@ -116,7 +116,7 @@ mode: summary
 fuel: "95"
 ```
 
-De galinės kortelė:
+Degalinių kortelė:
 
 ```yaml
 type: custom:fuel-prices-card
