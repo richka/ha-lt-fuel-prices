@@ -7,7 +7,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
-from .const import DOMAIN
+from .const import CONF_MUNICIPALITY, DOMAIN
 from .coordinator import (
     STORAGE_VERSION,
     EnaFuelPricesCoordinator,
@@ -65,9 +65,12 @@ def _has_loaded_entries(hass: HomeAssistant, entry: EnaConfigEntry) -> bool:
 async def _async_update_listener(
     hass: HomeAssistant, entry: EnaConfigEntry
 ) -> None:
-    """Reload the entry only when its options were changed."""
-    coordinator = entry.runtime_data
-    if coordinator is not None and dict(entry.options) == coordinator.options_snapshot:
+    """Reload the entry only when its configuration changed."""
+    coordinator = getattr(entry, "runtime_data", None)
+    if coordinator is not None and coordinator.config_snapshot == (
+        dict(entry.options),
+        entry.data.get(CONF_MUNICIPALITY),
+    ):
         # A token refresh updates entry.data; it must not rebuild the entry.
         return
     await hass.config_entries.async_reload(entry.entry_id)

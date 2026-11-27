@@ -79,6 +79,8 @@ bei kortelę.
 5. Pasirinkite savivaldybę ir (nebūtinai) miesto filtrą.
 6. Jei reikia atskirų degalinių sensorių: integracijos **Konfigūruoti** →
    „Stebimos degalinės“.
+7. Savivaldybei pakeisti: integracijos meniu → **Rekonfigūruoti**. Pakeitus
+   savivaldybę, miesto filtras ir degalinių sensoriai išvalomi.
 
 ## Kortelė
 

@@ -34,6 +34,13 @@
         "data": {
           "token": "Prieigos raktas"
         }
+      },
+      "reconfigure": {
+        "title": "Pakeisti savivaldybę",
+        "description": "Dabartinė savivaldybė: {current}. Ją pakeitus, bus išvalytas miesto filtras ir degalinių sensoriai, nes jie priklauso ankstesnei savivaldybei.",
+        "data": {
+          "municipality": "Savivaldybė"
+        }
       }
     },
     "error": {
@@ -47,6 +54,7 @@
       "already_configured": "Ši savivaldybė jau pridėta.",
       "reauth_successful": "Prieigos raktas atnaujintas.",
       "reauth_failed": "Nepavyko atnaujinti prieigos rakto.",
+      "reconfigure_successful": "Konfigūracija atnaujinta.",
       "no_data": "Pasirinktoje savivaldybėje LEA šiuo metu neskelbia degalų kainų."
     }
   },

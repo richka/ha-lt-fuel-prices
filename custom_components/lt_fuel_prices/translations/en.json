@@ -34,6 +34,13 @@
         "data": {
           "token": "Access token"
         }
+      },
+      "reconfigure": {
+        "title": "Change the municipality",
+        "description": "Current municipality: {current}. Changing it clears the city filter and the station sensors, because they belong to the previous municipality.",
+        "data": {
+          "municipality": "Municipality"
+        }
       }
     },
     "error": {
@@ -47,6 +54,7 @@
       "already_configured": "This municipality has already been added.",
       "reauth_successful": "Access token updated.",
       "reauth_failed": "Could not update the access token.",
+      "reconfigure_successful": "Configuration updated.",
       "no_data": "LEA currently publishes no fuel prices for the selected municipality."
     }
   },

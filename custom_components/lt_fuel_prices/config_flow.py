@@ -70,7 +70,6 @@ class EnaFuelPricesConfigFlow(ConfigFlow, domain=DOMAIN):
         self._municipalities: list[str] = []
         self._rows: list[dict[str, Any]] = []
         self._updated_at: str | None = None
-        self._reauth_entry: ConfigEntry | None = None
 
     @property
     def session(self):
@@ -234,25 +233,18 @@ class EnaFuelPricesConfigFlow(ConfigFlow, domain=DOMAIN):
         self, entry_data: Mapping[str, Any]
     ) -> ConfigFlowResult:
         """Try a silent token refresh before asking the user."""
-        entry_id = self.context.get("entry_id")
-        self._reauth_entry = (
-            self.hass.config_entries.async_get_entry(entry_id) if entry_id else None
-        )
-        if self._reauth_entry is None:
-            return self.async_abort(reason="reauth_failed")
+        entry = self._get_reauth_entry()
 
-        if self._reauth_entry.data.get(CONF_TOKEN_AUTO):
+        if entry.data.get(CONF_TOKEN_AUTO):
             try:
                 token = await async_discover_token(self.session)
                 await async_validate_token(self.session, token)
             except EnaApiError:
                 _LOGGER.debug("Silent LEA token refresh failed, asking the user")
             else:
-                self.hass.config_entries.async_update_entry(
-                    self._reauth_entry,
-                    data={**self._reauth_entry.data, CONF_TOKEN: token},
+                return self.async_update_reload_and_abort(
+                    entry, data_updates={CONF_TOKEN: token}
                 )
-                return self.async_abort(reason="reauth_successful")
 
         return await self.async_step_reauth_confirm()
 
@@ -273,20 +265,92 @@ class EnaFuelPricesConfigFlow(ConfigFlow, domain=DOMAIN):
             except EnaApiError:
                 errors["base"] = "unknown"
             else:
-                if self._reauth_entry is not None:
-                    self.hass.config_entries.async_update_entry(
-                        self._reauth_entry,
-                        data={
-                            **self._reauth_entry.data,
-                            CONF_TOKEN: token,
-                            CONF_TOKEN_AUTO: False,
-                        },
-                    )
-                return self.async_abort(reason="reauth_successful")
+                return self.async_update_reload_and_abort(
+                    self._get_reauth_entry(),
+                    data_updates={CONF_TOKEN: token, CONF_TOKEN_AUTO: False},
+                )
 
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=vol.Schema({vol.Required(CONF_TOKEN): TOKEN_SELECTOR}),
+            errors=errors,
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Change the municipality and reset the filters that depended on it."""
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+
+        if not self._municipalities:
+            try:
+                self._municipalities = await async_get_municipalities(
+                    self.session, entry.data[CONF_TOKEN]
+                )
+            except EnaApiAuthError:
+                errors["base"] = "invalid_auth"
+            except EnaApiConnectionError:
+                errors["base"] = "cannot_connect"
+            except EnaApiError:
+                errors["base"] = "unknown"
+
+        if user_input is not None:
+            municipality = user_input[CONF_MUNICIPALITY]
+            existing = self.hass.config_entries.async_entry_for_domain_unique_id(
+                DOMAIN, municipality.lower()
+            )
+            if existing is not None and existing.entry_id != entry.entry_id:
+                return self.async_abort(reason="already_configured")
+
+            try:
+                response = await async_get_prices(
+                    self.session, entry.data[CONF_TOKEN], municipality
+                )
+            except EnaApiAuthError:
+                errors["base"] = "invalid_auth"
+            except EnaApiConnectionError:
+                errors["base"] = "cannot_connect"
+            except EnaApiError:
+                errors["base"] = "unknown"
+            else:
+                if not response.rows:
+                    return self.async_abort(reason="no_data")
+                options = {
+                    CONF_CITY_PREFIX: "",
+                    CONF_STATIONS_MODE: STATIONS_MODE_NONE,
+                    CONF_STATIONS: [],
+                }
+                # The flow owns the reload: keep the update listener quiet so
+                # async_update_reload_and_abort performs the single reload.
+                coordinator = getattr(entry, "runtime_data", None)
+                if coordinator is not None:
+                    coordinator.config_snapshot = (dict(options), municipality)
+                return self.async_update_reload_and_abort(
+                    entry,
+                    unique_id=municipality.lower(),
+                    title=municipality,
+                    data_updates={CONF_MUNICIPALITY: municipality},
+                    options=options,
+                )
+
+        current = entry.data[CONF_MUNICIPALITY]
+        options = [
+            SelectOptionDict(value=municipality, label=municipality)
+            for municipality in (self._municipalities or [current])
+        ]
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_MUNICIPALITY, default=current): SelectSelector(
+                        SelectSelectorConfig(
+                            options=options, mode=SelectSelectorMode.DROPDOWN
+                        )
+                    )
+                }
+            ),
+            description_placeholders={"current": current},
             errors=errors,
         )
 

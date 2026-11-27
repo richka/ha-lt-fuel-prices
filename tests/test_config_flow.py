@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_USER
+from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_RECONFIGURE, SOURCE_USER
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -23,6 +23,7 @@ from custom_components.lt_fuel_prices.const import (
 )
 from tests.helpers import (
     MUNICIPALITY,
+    ROWS,
     TOKEN,
     WEBSITE,
     entry_data,
@@ -340,3 +341,142 @@ async def test_options_selected_stations(hass, aioclient_mock):
     assert (
         hass.states.get("sensor.marijampole_neste_vilkaviskio_g_61d") is not None
     )
+
+
+async def test_reconfigure_resets_city_and_stations(hass, aioclient_mock):
+    """Reconfigure changes the municipality and clears the dependent options."""
+    new_municipality = "Vilniaus m. sav."
+    new_rows = [
+        row(
+            "Neste",
+            "Vilnius, Gedimino g. 1, 01103",
+            "benzinas_95",
+            "1.850",
+            municipality=new_municipality,
+        )
+    ]
+    aioclient_mock.get(latest_url(), json=prices_payload(rows=ROWS + new_rows))
+    aioclient_mock.get(prices_url(), json=prices_payload())
+    aioclient_mock.get(
+        prices_url(new_municipality), json=prices_payload(rows=new_rows)
+    )
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Marijampolė",
+        unique_id=MUNICIPALITY.lower(),
+        data=entry_data(),
+        options=entry_options(
+            mode=STATIONS_MODE_SELECTED,
+            stations=["Neste - Marijampolė, Vilkaviškio g. 61D, 68153"],
+        ),
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+    assert result["description_placeholders"]["current"] == MUNICIPALITY
+    selector = next(iter(result["data_schema"].schema.values()))
+    assert {option["value"] for option in selector.config["options"]} == {
+        MUNICIPALITY,
+        new_municipality,
+    }
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_MUNICIPALITY: new_municipality}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.data[CONF_MUNICIPALITY] == new_municipality
+    assert entry.title == new_municipality
+    assert entry.unique_id == new_municipality.lower()
+    assert entry.options == {
+        CONF_CITY_PREFIX: "",
+        CONF_STATIONS_MODE: STATIONS_MODE_NONE,
+        CONF_STATIONS: [],
+    }
+    # The reload fetched the new municipality; the existing entity ids are kept.
+    assert hass.states.get("sensor.marijampole_degalines").state == "1"
+    assert hass.states.get("sensor.marijampole_neste_vilkaviskio_g_61d") is None
+
+
+async def test_reconfigure_rejects_configured_municipality(hass, aioclient_mock):
+    """A municipality that already has an entry cannot be picked again."""
+    new_municipality = "Vilniaus m. sav."
+    aioclient_mock.get(
+        latest_url(),
+        json=prices_payload(
+            rows=[
+                *ROWS,
+                row(
+                    "Neste",
+                    "Vilnius, Gedimino g. 1, 01103",
+                    "benzinas_95",
+                    "1.850",
+                    municipality=new_municipality,
+                ),
+            ]
+        ),
+    )
+    entry = await _setup_entry(hass, aioclient_mock, entry_options())
+    MockConfigEntry(
+        domain=DOMAIN,
+        title="Vilnius",
+        unique_id=new_municipality.lower(),
+        data=entry_data(**{CONF_MUNICIPALITY: new_municipality}),
+        options=entry_options(prefix=""),
+    ).add_to_hass(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_MUNICIPALITY: new_municipality}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    assert entry.data[CONF_MUNICIPALITY] == MUNICIPALITY
+
+
+async def test_reconfigure_aborts_without_data(hass, aioclient_mock):
+    """A municipality without published prices is rejected."""
+    new_municipality = "Vilniaus m. sav."
+    aioclient_mock.get(
+        latest_url(),
+        json=prices_payload(
+            rows=[
+                *ROWS,
+                row(
+                    "Neste",
+                    "Vilnius, Gedimino g. 1, 01103",
+                    "benzinas_95",
+                    "1.850",
+                    municipality=new_municipality,
+                ),
+            ]
+        ),
+    )
+    aioclient_mock.get(prices_url(new_municipality), json=prices_payload(rows=[]))
+    entry = await _setup_entry(hass, aioclient_mock, entry_options())
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_MUNICIPALITY: new_municipality}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "no_data"
+    assert entry.data[CONF_MUNICIPALITY] == MUNICIPALITY
