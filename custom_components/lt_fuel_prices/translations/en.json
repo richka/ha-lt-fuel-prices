@@ -37,7 +37,7 @@
       },
       "reconfigure": {
         "title": "Change the municipality",
-        "description": "Current municipality: {current}. Changing it clears the city filter and the station sensors, because they belong to the previous municipality.",
+        "description": "Current municipality: {current} — changing it clears the city filter and the station sensors, because they belong to the previous municipality.",
         "data": {
           "municipality": "Municipality"
         }

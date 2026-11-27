@@ -37,7 +37,7 @@
       },
       "reconfigure": {
         "title": "Pakeisti savivaldybę",
-        "description": "Dabartinė savivaldybė: {current}. Ją pakeitus, bus išvalytas miesto filtras ir degalinių sensoriai, nes jie priklauso ankstesnei savivaldybei.",
+        "description": "Dabartinė savivaldybė: {current} — ją pakeitus, bus išvalytas miesto filtras ir degalinių sensoriai, nes jie priklauso ankstesnei savivaldybei.",
         "data": {
           "municipality": "Savivaldybė"
         }
