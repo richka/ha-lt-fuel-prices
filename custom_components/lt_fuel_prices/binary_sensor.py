@@ -21,6 +21,8 @@ from .const import STALE_AFTER
 from .coordinator import EnaFuelPricesCoordinator
 from .entity import EnaFuelPricesEntity
 
+PARALLEL_UPDATES = 0
+
 
 class EnaDataStaleSensor(EnaFuelPricesEntity, BinarySensorEntity):
     """Problem sensor that turns on when the LEA data is too old."""

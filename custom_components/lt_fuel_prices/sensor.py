@@ -40,6 +40,8 @@ from .entity import EnaFuelPricesEntity
 from .helpers import station_unique_id
 from .snapshot import Snapshot, Station
 
+PARALLEL_UPDATES = 0
+
 PRICE_UNIT = "€/l"
 
 

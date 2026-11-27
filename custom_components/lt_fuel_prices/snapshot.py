@@ -11,10 +11,13 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from homeassistant.util import dt as dt_util
 
 from .const import BRAND_PREFIXES, FUEL_LABELS, PRICE_CACHE_MAX_AGE
+
+API_TIME_ZONE = ZoneInfo("Europe/Vilnius")
 
 NO_PRICE_LABEL = "—"
 
@@ -50,7 +53,7 @@ def parse_updated_at(raw: Any) -> datetime | None:
     if parsed is None:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+        parsed = parsed.replace(tzinfo=API_TIME_ZONE)
     return parsed
 
 

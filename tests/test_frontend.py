@@ -74,6 +74,9 @@ def test_card_is_configurable_and_escapes_markup():
     assert "ha-entity-picker" in body
     assert "static getStubConfig(hass" in body
     assert "const esc =" in body
+    assert "ena\\.lt" in body
+    assert "(?!\\/)" in body
+    assert "url.startsWith(\"/\")" not in body
 
 
 def test_readme_documents_card_keys():

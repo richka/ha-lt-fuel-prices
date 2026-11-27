@@ -1,12 +1,6 @@
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "ena-fuel-prices"
-version = "0.1.0"
-description = "Home Assistant custom integration for Lithuanian (LEA) fuel prices"
-requires-python = ">=3.13"
+# This repository is a Home Assistant custom component, not a Python
+# distribution. The release version lives in
+# custom_components/lt_fuel_prices/manifest.json.
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

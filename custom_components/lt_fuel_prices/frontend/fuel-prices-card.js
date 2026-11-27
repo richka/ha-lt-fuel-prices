@@ -243,11 +243,18 @@ class FuelPricesCard extends HTMLElement {
   _logoSrc(s) {
     if (s && s.logo && s.logo.url) {
       const url = String(s.logo.url);
-      if (/^https?:\/\//i.test(url) || url.startsWith("/")) {
+      if (
+        /^https:\/\/([a-z0-9-]+\.)*ena\.lt(?:\/|$)/i.test(url) ||
+        /^\/(?!\/)/.test(url)
+      ) {
         return url;
       }
-      const file = url.split("/").pop().split("?")[0].replace(/[^A-Za-z0-9._-]/g, "");
-      if (file) return `${ASSET_BASE}/logos/${file}`;
+      // Only plain relative filenames may fall back to a bundled logo; an
+      // absolute URL on another host must not leak its filename into our path.
+      if (!/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(url)) {
+        const file = url.split("/").pop().split("?")[0].replace(/[^A-Za-z0-9._-]/g, "");
+        if (file) return `${ASSET_BASE}/logos/${file}`;
+      }
     }
     if (!s || !s.brand) return null;
     const brand = String(s.brand).toLowerCase();

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -19,6 +20,23 @@ from custom_components.lt_fuel_prices.snapshot import (
     suggest_city_prefix,
 )
 from tests.helpers import MUNICIPALITY, ROWS, UPDATED_AT
+
+
+def test_parse_updated_at_naive_uses_lea_timezone():
+    """The API now returns a naive Lithuanian local timestamp."""
+    parsed = parse_updated_at("2026-11-24 12:56:29")
+
+    assert parsed == datetime(
+        2026, 11, 24, 12, 56, 29, tzinfo=ZoneInfo("Europe/Vilnius")
+    )
+
+
+def test_parse_updated_at_keeps_an_explicit_offset():
+    """Older API responses carried an offset and must keep it."""
+    parsed = parse_updated_at("2026-11-19T11:37:56+02:00")
+
+    assert parsed is not None
+    assert parsed.utcoffset() == timedelta(hours=2)
 
 
 @pytest.mark.parametrize(
