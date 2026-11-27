@@ -17,7 +17,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import slugify
 
 from .const import (
     ATTRIBUTION_TEXT,
@@ -202,7 +201,7 @@ class EnaFuelPricesSensor(EnaFuelPricesEntity, SensorEntity):
         super().__init__(
             coordinator,
             unique_id=f"{entry.entry_id}_{description.key}",
-            entity_id=f"sensor.{slugify(entry.title)}_{description.object_id}",
+            suggested_object_id=description.object_id,
         )
         self.entity_description = description
 

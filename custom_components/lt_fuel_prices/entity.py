@@ -14,22 +14,33 @@ class EnaFuelPricesEntity(CoordinatorEntity[EnaFuelPricesCoordinator]):
 
     _attr_has_entity_name = True
 
+    _suggested_object_id: str | None = None
+
     def __init__(
         self,
         coordinator: EnaFuelPricesCoordinator,
         *,
         name: str | None = None,
         unique_id: str,
-        entity_id: str | None = None,
+        suggested_object_id: str | None = None,
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
         if name is not None:
             self._attr_name = name
         self._attr_unique_id = unique_id
-        if entity_id is not None:
-            # Keep entity IDs stable when the display name or UI language changes.
-            self.entity_id = entity_id
+        if suggested_object_id is not None:
+            # Only a suggestion: the entity registry owns the entity id after
+            # the first creation. With has_entity_name the registry prefixes it
+            # with the device name, so this is the suffix only.
+            self._suggested_object_id = suggested_object_id
+
+    @property
+    def suggested_object_id(self) -> str | None:
+        """Return the object id to use at creation; the registry owns it after."""
+        if self._suggested_object_id is not None:
+            return self._suggested_object_id
+        return super().suggested_object_id
 
     @property
     def device_info(self) -> DeviceInfo:

@@ -15,7 +15,6 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
-from homeassistant.util import slugify
 
 from .const import STALE_AFTER
 from .coordinator import EnaFuelPricesCoordinator
@@ -37,7 +36,7 @@ class EnaDataStaleSensor(EnaFuelPricesEntity, BinarySensorEntity):
         super().__init__(
             coordinator,
             unique_id=f"{entry.entry_id}_stale",
-            entity_id=f"binary_sensor.{slugify(entry.title)}_duomenys_pasene",
+            suggested_object_id="duomenys_pasene",
         )
 
     @property
